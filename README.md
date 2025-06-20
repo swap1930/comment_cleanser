@@ -1,35 +1,34 @@
 # 🧹 Comment Cleanser – Hate & Offensive Comment Detector
 
-A Streamlit-powered web app that detects whether a tweet/comment is **Hate Speech**, **Offensive**, or **Clean** using Machine Learning. It also learns from uncertain inputs and suggests cleaner alternatives.
+This is a Streamlit-based machine learning web app that detects whether a user-provided comment or tweet is categorized as **Hate Speech**, **Offensive**, or **Clean**. The model is trained using logistic regression and can **improve over time** by learning from newly encountered comments.
 
 ---
 
-## 🚀 Features
+## 📌 Features
 
-- Detects:  
-  ✅ Hate Speech  
-  ✅ Offensive Language  
-  ✅ Clean Comments
-
-- Self-Learning:  
-  Saves **new, unclear comments** and re-trains the model with feedback.
-
-- Suggestions:  
-  Gives **clean alternative comments** similar to offensive ones.
+- 🔍 Classifies input into:
+  - Hate Speech 😠
+  - Offensive 😡
+  - Clean 😊
+- 📥 Learns from unknown/uncertain inputs (low confidence)
+- 💡 Suggests clean alternative comments when toxic input is detected
+- 🧠 Re-trains model using both original and feedback data
+- 💬 Built with Streamlit for quick deployment and interaction
 
 ---
 
-## 📁 Project Structure
+## 📂 Folder Structure
 
-📦 comment-cleanser/
+comment-cleanser/
 ├── app.py # Main Streamlit app
 ├── data/
-│ └── train.csv # Dataset with "tweet" and "class" columns
+│ └── train.csv # Original dataset (tweet + class)
 ├── feedback/
-│ └── new_data.csv # Saved unclear comments (auto-created)
+│ └── new_data.csv # New user comments (auto-generated)
 ├── model/
-│ └── hate_offensive_model.joblib # Trained model (auto-created)
-└── requirements.txt # Python dependencies
+│ └── hate_offensive_model.joblib # Trained model (auto-saved)
+├── requirements.txt # Python dependencies
+└── README.md # Project documentation
 
 yaml
 Copy
@@ -37,44 +36,89 @@ Edit
 
 ---
 
-## 📦 Setup Instructions
+## 💾 Dataset
 
-1. **Clone this repo:**
+We use the [Hate Speech and Offensive Language Dataset](https://www.kaggle.com/datasets/lisaleesmith/hate-speech-and-offensive-language-dataset).
+
+- `tweet` — Comment or tweet text
+- `class` — Label:
+  - 0 = Hate Speech
+  - 1 = Offensive
+  - 2 = Clean
+
+---
+
+## 🚀 Getting Started
+
+### 🔧 Installation
 
 ```bash
+# Clone this repository
 git clone https://github.com/your-username/comment-cleanser.git
 cd comment-cleanser
-Install dependencies:
 
-bash
-Copy
-Edit
+# Create and activate a virtual environment
+python -m venv env
+env\Scripts\activate  # Windows
+# OR
+source env/bin/activate  # macOS/Linux
+
+# Install the dependencies
 pip install -r requirements.txt
-Run the app:
-
+▶️ Run the App
 bash
 Copy
 Edit
 streamlit run app.py
-🧠 Dataset Used
-Dataset: Hate Speech and Offensive Language Dataset
+📊 How It Works
+User submits a comment.
 
-Labels:
+The model classifies the comment into one of three categories.
 
-0 – Hate Speech 😠
+If prediction confidence is low (<65%), it stores the comment for learning.
 
-1 – Offensive 😡
+Suggestions are shown if the comment is toxic.
 
-2 – Clean 😊
+App automatically re-trains using new data on-the-fly.
 
-💡 Future Ideas
-Add support for user feedback correction
+📸 Example Output
+Input: You're a dumb person
 
-Deploy as a web service or API
+Prediction: Offensive 😡
 
-Use deep learning for more accuracy
+Confidence: 91%
 
-🧑‍💻 Author
+Suggested Clean Comments:
+
+You're really smart!
+
+That was a great point.
+
+✍️ Author
 Swapnil Dudhane
-SYIT, GPKP
-🌐 GitHub: your-username
+SYIT – Government Polytechnic, Kolhapur
+🔗 GitHub
+
+📜 License
+This project is licensed under the MIT License.
+
+yaml
+Copy
+Edit
+
+---
+
+### ✅ Notes:
+- Change `your-username` to your actual GitHub username before uploading.
+- Add a `LICENSE` file if you want GitHub to show the license properly.
+- Let me know if you also want a demo GIF, app screenshot, or deployment guide.
+
+Ready to paste. You're good to go now.
+
+
+
+
+
+
+
+
