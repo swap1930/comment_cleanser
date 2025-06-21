@@ -11,23 +11,24 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 import joblib
 
+# Label mapping
 label_map = {0: "Hate Speech 😠", 1: "Offensive 😡", 2: "Clean 😊"}
 
-# Save new low-confidence comment
+# Save low-confidence comment to feedback
 def save_unknown_comment(text, probs):
     os.makedirs("feedback", exist_ok=True)
     with open("feedback/new_data.csv", mode="a", newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow([text, probs[0], probs[1], probs[2]])
 
-# Load main dataset only once
+# Load main dataset (once)
 @st.cache_data(show_spinner="📥 Loading main dataset...")
 def load_main_data():
     df = pd.read_csv("data/train.csv", usecols=["tweet", "class"]).dropna()
     df["class"] = df["class"].astype(int)
     return df
 
-# Load clean comment suggestions
+# Load positive comments
 @st.cache_data
 def load_positive_data():
     pos_df = pd.read_csv("data/positive_data.csv").dropna()
@@ -36,6 +37,7 @@ def load_positive_data():
     pos_df = pos_df.drop_duplicates(subset="text").reset_index(drop=True)
     return pos_df["text"].tolist()
 
+# Suggest clean responses based on similarity
 def get_clean_suggestions(user_input, model, n=3):
     texts = load_positive_data()
     if not texts:
@@ -48,8 +50,8 @@ def get_clean_suggestions(user_input, model, n=3):
     random.shuffle(top)
     return [texts[i] for i in top[:n]]
 
-# Train on main dataset once
-@st.cache_resource(show_spinner="🧠 Training model (base)...")
+# Train model on main dataset (cached)
+@st.cache_resource(show_spinner="🧠 Training base model...")
 def train_main_model():
     df = load_main_data()
     X_train, X_test, y_train, y_test = train_test_split(df["tweet"], df["class"], test_size=0.2, random_state=42)
@@ -62,7 +64,7 @@ def train_main_model():
     joblib.dump(model, "model/base_model.joblib")
     return model, acc
 
-# Retrain only on feedback if exists
+# Retrain only on feedback data
 def retrain_on_feedback():
     if not os.path.exists("feedback/new_data.csv"):
         return None
@@ -83,16 +85,18 @@ def retrain_on_feedback():
         print("Retrain error:", e)
         return None
 
-# UI
+# UI Setup
 st.set_page_config(page_title="Comment Cleanser", page_icon="✨")
 st.title(" ✨ Comment Cleanser")
 st.markdown("<h4>Detect Hate, Offensive & Clean Comments</h4>", unsafe_allow_html=True)
 
+# Load main model
 base_model, accuracy = train_main_model()
 st.markdown(f"📊 **Base Model Accuracy:** `{accuracy:.2%}`")
 
 user_input = st.text_area("✍️ Enter a comment to check:", height=120)
 
+# On prediction
 if st.button("Check Comment Type"):
     if user_input.strip():
         prediction = base_model.predict([user_input])[0]
@@ -104,20 +108,32 @@ if st.button("Check Comment Type"):
             st.warning("🤔 Unclear comment. Storing for future learning...")
             save_unknown_comment(user_input, prob)
 
-            # Retrain only on feedback
+            # Try retraining on new feedback data
             feedback_model = retrain_on_feedback()
             if feedback_model:
                 st.success("🔁 Retrained on feedback!")
                 prediction = feedback_model.predict([user_input])[0]
                 prob = feedback_model.predict_proba([user_input])[0]
             else:
-                st.error("⚠️ Failed to retrain model.")
+                st.error("⚠️ Could not retrain on feedback.")
+                feedback_model = base_model
         else:
-            feedback_model = base_model  # continue with original
+            feedback_model = base_model
 
         st.success(f"🔎 **Prediction:** {label_map[prediction]}")
-        st.info(f"📊 Confidence:\n- Hate: `{prob[0]:.2%}`\n- Offensive: `{prob[1]:.2%}`\n- Clean: `{prob[2]:.2%}`")
 
+        # Safely show confidence scores
+        classes = feedback_model.named_steps['clf'].classes_
+        confidence_msg = "📊 Confidence:\n"
+        if 0 in classes:
+            confidence_msg += f"- Hate: `{prob[list(classes).index(0)]:.2%}`\n"
+        if 1 in classes:
+            confidence_msg += f"- Offensive: `{prob[list(classes).index(1)]:.2%}`\n"
+        if 2 in classes:
+            confidence_msg += f"- Clean: `{prob[list(classes).index(2)]:.2%}`\n"
+        st.info(confidence_msg)
+
+        # Clean suggestions if offensive/hate
         if prediction in [0, 1]:
             st.markdown("💡 **Suggested Clean Alternatives:**")
             for s in get_clean_suggestions(user_input, feedback_model):
